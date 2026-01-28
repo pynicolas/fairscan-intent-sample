@@ -38,3 +38,22 @@ try {
 ```
 See the code for [MainActivity](app/src/main/java/org/fairscan/intentsample/MainActivity.kt).
 
+## How to check availability
+If you want to programmatically check from your app, whether FairScan is available to serve this intent, you can do the following:
+```kotlin
+fun isFairScanAvailable(context: Context): Boolean {
+    val scanIntent = Intent("org.fairscan.app.action.SCAN_TO_PDF")
+    val packageManager = context.packageManager;
+    return scanIntent.resolveActivity(packageManager) != null;
+}
+```
+Due to the decreased package visibility since Android 11 (API level 30), see https://developer.android.com/training/package-visibility,
+you also need to add the following to your AndroidManifest.xml, else the resolved Activity will always be null:
+```xml
+<queries>
+    <intent>
+        <action android:name="org.fairscan.app.action.SCAN_TO_PDF" />
+    </intent>
+   <!-- ... -->
+</queries>
+``` 
