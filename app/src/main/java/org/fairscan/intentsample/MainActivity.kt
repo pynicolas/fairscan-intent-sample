@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +31,7 @@ class MainActivity : ComponentActivity() {
     private var status = mutableStateOf("Idle")
     private var pdfList = mutableStateOf<List<File>>(emptyList())
     private var showMissingAppDialog = mutableStateOf(false)
+    private var isFairScanAvailable = mutableStateOf(false)
 
     private val launcher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -51,13 +53,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         loadPdfList()
+        isFairScanAvailable.value = checkFairScanAvailability()
 
         setContent {
             Scaffold { innerPadding ->
                 MainScreen(
                     status = status.value,
                     pdfs = pdfList.value,
+                    fairScanAvailable = isFairScanAvailable.value,
                     showDialog = showMissingAppDialog.value,
                     onDismissDialog = { showMissingAppDialog.value = false },
                     onInvoke = {
@@ -111,12 +116,20 @@ class MainActivity : ComponentActivity() {
         loadPdfList()
         status.value = "All PDFs deleted"
     }
+
+    // On Android 11+, querying available activities requires declaring the
+    // intent in the <queries> section of the manifest.
+    private fun checkFairScanAvailability(): Boolean {
+        val intent = Intent("org.fairscan.app.action.SCAN_TO_PDF")
+        return intent.resolveActivity(packageManager) != null
+    }
 }
 
 @Composable
 fun MainScreen(
     status: String,
     pdfs: List<File>,
+    fairScanAvailable: Boolean,
     showDialog: Boolean,
     onDismissDialog: () -> Unit,
     onInvoke: () -> Unit,
@@ -138,7 +151,15 @@ fun MainScreen(
     }
 
     Column(modifier) {
-        Button(onClick = onInvoke) { Text("Invoke FairScan") }
+        if (fairScanAvailable) {
+            Button(onClick = onInvoke) { Text("Invoke FairScan") }
+        } else {
+            Text(
+                text = "FairScan is not installed on this device.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+
         Text("Last result: $status", Modifier.padding(vertical = 8.dp))
 
         Spacer(Modifier.height(8.dp))
